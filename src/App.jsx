@@ -14,11 +14,7 @@ function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Notfound />} />
-
-          {/* Route bảo mật, chỉ cho phép truy cập nếu đăng nhập */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/dashboard/:tab" element={<DashboardPage />} />
-          </Route>
+          <Route path="/dashboard/:tab" element={<DashboardPage />} />
         </Routes>
       </Router>
       <Toaster richColors position="top-right" expand={true} theme="light" />
