@@ -32,7 +32,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <main className="flex-1 m-3 p-4">
-        <p className="text-center text-3xl mt-5 mb-10">Meibeichi Store</p>
+        <p className="text-center text-3xl mb-2">Meibeichi Store</p>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">Chung</TabsTrigger>

@@ -156,7 +156,7 @@ export default function AddProductTab() {
 
             <div>
               <Label htmlFor="material">Chất Liệu</Label>
-              <Textarea id="material" name="material" value={formData.material} onChange={handleInputChange} placeholder="Nhập chất liệu" rows={3} />
+              <Textarea id="material" name="material" value={formData.material} onChange={handleInputChange} placeholder="Nhập chất liệu" rows={5} />
             </div>
 
             <div>

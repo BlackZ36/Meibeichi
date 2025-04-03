@@ -7,7 +7,7 @@ export default function ImageHover({ width, height, imgUrl, isHoverable }) {
     <div className={`relative ${isHoverable ? "z-50" : "z-20"}`}>
       {/* Thumbnail image */}
       <div
-        className="relative border border-gray-200 rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:shadow-lg hover:scale-[2]"
+        className="relative border border-gray-200 rounded-md overflow-hidden cursor-pointer transition-transform duration-200 hover:shadow-lg hover:scale-[3]"
         onMouseEnter={() => isHoverable && setIsHovering(true)}
         onMouseLeave={() => isHoverable && setIsHovering(false)}
       >

@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useMemo, useEffect } from "react";
-import { ExternalLink, ArrowUpDown, Search, Copy, Check, Loader2, Filter } from "lucide-react";
+import { ExternalLink, ArrowUpDown, Search, Copy, Check, Loader2, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import ChatService from "@/services/ChatService";
 import ImageHover from "./image-hover";
 import data from "../lib/database.json";
+import { Button } from "./ui/button";
+import convertVietnamese from "@/lib/convert-vietnamese";
 
 export default function ProductPage() {
   const [types, setTypes] = useState([]);
@@ -22,37 +24,29 @@ export default function ProductPage() {
   const [sortDirection, setSortDirection] = useState("asc");
   const [copiedField, setCopiedField] = useState(null);
   const [copyingImage, setCopyingImage] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filteredAndSortedProducts, setFilteredAndSortedProducts] = useState([]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredAndSortedProducts.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
 
   useEffect(() => {
-    // const fetchData = async () => {
-    //   try {
-    //     const res = await ProductService.getAll();
-    //     const resChat = await ChatService.getAll();
-    //     if (res && res.data) {
-    //       setProducts(res.data);
-    //       setChats(resChat.data);
-    //       setSelectedProduct(res.data[0]); // Chọn sản phẩm đầu tiên làm mặc định
-    //     } else {
-    //       console.log("Không có dữ liệu hoặc dữ liệu không hợp lệ", res);
-    //     }
-    //   } catch (error) {
-    //     console.log("Lỗi khi gọi API:", error);
-    //   }
-    // };
-
-    //fetchData();
     setProducts(data.products);
     setSelectedProduct(data.products[0]);
     setChats(data.chats);
-  }, []);
-
-  useEffect(() => {
+    setFilteredAndSortedProducts(data.products);
     if (products && products.length > 0) {
       setTypes(["all", ...Array.from(new Set(products.map((product) => product?.type || "")))]);
     } else {
       setTypes(["all"]);
     }
-  }, [products]); // Theo dõi sự thay đổi của `products`
+  }, [products]);
+
+  useEffect(() => {}, [products]); // Theo dõi sự thay đổi của `products`
 
   // Handle column sort
   const handleSort = (column) => {
@@ -66,48 +60,41 @@ export default function ProductPage() {
     }
   };
 
-  // Filter and sort products
-  const filteredAndSortedProducts = useMemo(() => {
-    if (!products) return null;
+  // Update filtered and sorted products
+  useEffect(() => {
+    if (!products) return;
     // First filter by type and search term
-    const filtered = products.filter((product) => {
-      // Filter by type (if not "all")
-      if (selectedType !== "all" && product.type.toLowerCase() !== selectedType.toLowerCase()) {
-        return false;
-      }
+    let filtered = [...products];
 
-      // Then filter by search term
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return product.code.toLowerCase().includes(searchLower) || product.type.toLowerCase().includes(searchLower) || product.price.toLowerCase().includes(searchLower) || product.material.toLowerCase().includes(searchLower);
-      }
+    // Apply type filter
+    if (selectedType !== "all") {
+      filtered = filtered.filter((product) => product.type === selectedType);
+    }
 
-      return true;
-    });
+    if (searchTerm.trim()) {
+      const searchSlug = convertVietnamese(searchTerm.toLowerCase());
+      filtered = filtered.filter(
+        (product) => convertVietnamese(product.name?.toLowerCase()).includes(searchSlug) || convertVietnamese(product.code?.toLowerCase()).includes(searchSlug) || convertVietnamese(product.type?.toLowerCase()).includes(searchSlug)
+      );
+    }
 
-    // Then sort by selected column
-    return [...filtered].sort((a, b) => {
-      let aValue = a[sortColumn];
-      let bValue = b[sortColumn];
+    // Then sort
+    const sorted = filtered.sort((a, b) => {
+      const aValue = a[sortColumn] || "";
+      const bValue = b[sortColumn] || "";
 
-      // Handle numeric values
-      if (sortColumn === "id") {
-        aValue = a.id;
-        bValue = b.id;
-      } else {
-        aValue = String(aValue).toLowerCase();
-        bValue = String(bValue).toLowerCase();
-      }
-
-      if (aValue < bValue) {
-        return sortDirection === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortDirection === "asc" ? 1 : -1;
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
       return 0;
     });
-  }, [products, searchTerm, selectedType, sortColumn, sortDirection]);
+
+    setFilteredAndSortedProducts(sorted);
+    if (sorted.length > 0) {
+      setSelectedProduct(sorted[0]);
+    }
+    setCurrentPage(1);
+  }, [products, sortColumn, sortDirection, selectedType, searchTerm]);
 
   // Update selected product when filtered products change
   // This ensures we always have a valid selected product
@@ -180,6 +167,17 @@ export default function ProductPage() {
       });
   };
 
+  // Handle page change
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Handle rows per page change
+  const handleRowsPerPageChange = (value) => {
+    setRowsPerPage(Number.parseInt(value));
+    setCurrentPage(1); // Reset to first page when changing rows per page
+  };
+
   if (!products || products.length === 0) {
     return <p>Loading...</p>; // Hiển thị loading khi chưa có dữ liệu
   }
@@ -200,11 +198,17 @@ export default function ProductPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {types &&
-                    types.map((type) => (
-                      <SelectItem key={type} value={type.toLowerCase()} className="capitalize">
-                        {type}
-                      </SelectItem>
-                    ))}
+                    types.map((type) => {
+                      const typeValue = type.toLowerCase();
+                      if (typeValue) {
+                        return (
+                          <SelectItem key={type} value={typeValue} className="capitalize">
+                            {type}
+                          </SelectItem>
+                        );
+                      }
+                      return null; // Bỏ qua nếu value là chuỗi rỗng
+                    })}
                 </SelectContent>
               </Select>
             </div>
@@ -215,57 +219,88 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Product table */}
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Ảnh</TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("code")}>
-                    Mã
-                    {sortColumn === "code" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("name")}>
-                    Tên
-                    {sortColumn === "name" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
-                    Loại
-                    {sortColumn === "type" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">
-                    Giá
-                  </TableHead>
-                  <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">
-                    Chất liệu
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAndSortedProducts.length === 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">Hiển thị:</span>
+                <Select value={rowsPerPage.toString()} onValueChange={handleRowsPerPageChange}>
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue placeholder={rowsPerPage.toString()} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">Sản phẩm</span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="h-8 w-8">
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="sr-only">Trước</span>
+                </Button>
+
+                <span className="text-sm">
+                  Trang {currentPage} của {totalPages || 1}
+                </span>
+
+                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8">
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="sr-only">Sau</span>
+                </Button>
+              </div>
+            </div>
+            {/* Product table */}
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      No products found
-                    </TableCell>
+                    <TableHead className="w-[80px]">Ảnh</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("code")}>
+                      Mã
+                      {sortColumn === "code" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("name")}>
+                      Tên
+                      {sortColumn === "name" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
+                      Loại
+                      {sortColumn === "type" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                    </TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">Giá</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">Chất liệu</TableHead>
                   </TableRow>
-                ) : (
-                  filteredAndSortedProducts.map((product) => (
-                    <TableRow key={product.id} className={`cursor-pointer hover:bg-muted/50 ${selectedProduct && selectedProduct.id === product.id ? "bg-primary/10" : ""}`} onClick={() => setSelectedProduct(product)}>
-                      <TableCell className="p-2">
-                        <div className="relative rounded overflow-hidden border">
-                          <img src={product.images[0] || "/placeholder.svg"} className="object-cover" />
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {currentProducts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        No products found
                       </TableCell>
-                      <TableCell>{product.code || "-"}</TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell className="capitalize">{product.type}</TableCell>
-                      <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price}</TableCell>
-                      <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material}</TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    currentProducts.map((product) => (
+                      <TableRow key={product.id} className={`cursor-pointer hover:bg-muted/50 ${selectedProduct && selectedProduct.id === product.id ? "bg-primary/10" : ""}`} onClick={() => setSelectedProduct(product)}>
+                        <TableCell className="p-2">
+                          <div className="relative rounded overflow-hidden border w-24">
+                            <img src={product.images[0] || "/placeholder.svg"} alt={product.name} className="object-cover h-full w-full" />
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.code || "-"}</TableCell>
+                        <TableCell>{product.name}</TableCell>
+                        <TableCell className="capitalize">{product.type}</TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price}</TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </div>
 
@@ -311,7 +346,15 @@ export default function ProductPage() {
                     {copiedField === "Material" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
                   </button>
                 </div>
-                <p>{selectedProduct.material}</p>
+                <p>
+                  {/* {selectedProduct.material} */}
+                  {selectedProduct.material.split("\n").map((line, index) => (
+                    <React.Fragment key={index}>
+                      {line}
+                      <br />
+                    </React.Fragment>
+                  ))}
+                </p>
               </div>
 
               <div className="space-y-2">
