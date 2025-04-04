@@ -5,6 +5,7 @@ import ProductPage from "@/components/product-list-tab";
 import AddProductTab from "@/components/add-product-tab";
 import ImageHover from "@/components/image-hover";
 import ChatTab from "@/components/chat-tab";
+import EditProductPage from "@/components/edit-product";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,21 +32,25 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="flex-1 m-3 p-4">
-        <p className="text-center text-3xl mb-2">Meibeichi Store</p>
+      <main className="flex-1 m-1 p-1 md:p-4 md:m-4">
+        <p className="text-center text-3xl mb-5">Meibeichi Bé Nhỏ</p>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="general">Chung</TabsTrigger>
-            <TabsTrigger value="chat">Chat</TabsTrigger>
-            <TabsTrigger value="add" disabled={localStorage.getItem("user") !== "admin"}>
+          <TabsList className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full h-auto">
+            <TabsTrigger value="general" className="w-full text-center">
+              Chung
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="w-full text-center">
+              Chat
+            </TabsTrigger>
+            {/* <TabsTrigger value="settings" disabled={localStorage.getItem("user") !== "admin"} className="w-full text-center">
+              Cài Đặt
+            </TabsTrigger> */}
+            <TabsTrigger value="add" className="w-full text-center">
               Thêm Item
             </TabsTrigger>
-            <TabsTrigger value="addchat" disabled={localStorage.getItem("user") !== "admin"}>
+            {/* <TabsTrigger value="addchat" className="w-full text-center">
               Thêm Chat
-            </TabsTrigger>
-            <TabsTrigger value="settings" disabled={localStorage.getItem("user") !== "admin"}>
-              Cài Đặt
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="general">

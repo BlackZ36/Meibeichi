@@ -1,52 +1,69 @@
 import React from "react";
-import { useState, useMemo, useEffect } from "react";
-import { ExternalLink, ArrowUpDown, Search, Copy, Check, Loader2, Filter, ChevronRight, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ExternalLink, Search, Copy, Check, Filter, ChevronRight, ChevronLeft, Pencil, Trash2, ArrowUpNarrowWide, ArrowDownNarrowWide, Medal, Pin, PinOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import ProductService from "@/services/ProductService";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import ChatService from "@/services/ChatService";
 import ImageHover from "./image-hover";
 import data from "../lib/database.json";
 import { Button } from "./ui/button";
 import convertVietnamese from "@/lib/convert-vietnamese";
+import { deleteProduct, getAllProducts, updateProduct } from "@/services/ProductService";
+import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Spinner } from "./ui/spinner";
 
 export default function ProductPage() {
+  const [isLoading, setIsLoading] = useState(false);
   const [types, setTypes] = useState([]);
   const [selectedType, setSelectedType] = useState("all");
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState("");
   const [products, setProducts] = useState();
   const [chats, setChats] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState();
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortColumn, setSortColumn] = useState("id");
+  const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState("asc");
   const [copiedField, setCopiedField] = useState(null);
   const [copyingImage, setCopyingImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
   const [filteredAndSortedProducts, setFilteredAndSortedProducts] = useState([]);
+
+  //fetch const
+  const fetchData = async () => {
+    const res = await getAllProducts();
+
+    const productResponse1 = res.sort((a, b) => a.date - b.date);
+
+    const productResponse = productResponse1.sort((a, b) => b.order - a.order);
+
+    //product
+    setProducts(productResponse);
+    setSelectedProduct(productResponse[0]);
+    //chat
+    setChats(data.chats);
+    //filter and sort
+    setFilteredAndSortedProducts(productResponse);
+    if (res && res.length > 0) {
+      setTypes(["all", ...Array.from(new Set(res.map((product) => product?.type || "")))]);
+    } else {
+      setTypes(["all"]);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedProducts.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const currentProducts = filteredAndSortedProducts.slice(startIndex, endIndex);
-
-  useEffect(() => {
-    setProducts(data.products);
-    setSelectedProduct(data.products[0]);
-    setChats(data.chats);
-    setFilteredAndSortedProducts(data.products);
-    if (products && products.length > 0) {
-      setTypes(["all", ...Array.from(new Set(products.map((product) => product?.type || "")))]);
-    } else {
-      setTypes(["all"]);
-    }
-  }, [products]);
-
-  useEffect(() => {}, [products]); // Theo dõi sự thay đổi của `products`
 
   // Handle column sort
   const handleSort = (column) => {
@@ -129,7 +146,7 @@ export default function ProductPage() {
           await navigator.clipboard.write([item]);
 
           setCopiedField(`Image ${index + 1}`);
-          toast.success(`Image ${index + 1} copied to clipboard`);
+          toast.success(`đã copy ảnh ${index + 1}`);
 
           setTimeout(() => {
             setCopiedField(null);
@@ -154,7 +171,7 @@ export default function ProductPage() {
       .writeText(text)
       .then(() => {
         setCopiedField(fieldName);
-        toast.success(`${fieldName} copied to clipboard`);
+        toast.success(`đã copy ${fieldName}`);
 
         // Reset the copied state after 2 seconds
         setTimeout(() => {
@@ -178,12 +195,48 @@ export default function ProductPage() {
     setCurrentPage(1); // Reset to first page when changing rows per page
   };
 
-  if (!products || products.length === 0) {
-    return <p>Loading...</p>; // Hiển thị loading khi chưa có dữ liệu
-  }
+  //handle confirm delete
+  const handleConfirmDelete = async (productId) => {
+    await deleteProduct(productId);
+    toast.success("Xóa sản phầm thành công");
+    fetchData();
+  };
+  //handle open dialog
+  const handleOpenDialog = (id) => {
+    setIsDeleteOpen(true);
+    setDeleteId(id);
+  };
+
+  const handlePin = async (id, type) => {
+    try {
+      const updatedOrder = type === "pin" ? 99 : 0;
+      setIsLoading(true);
+      // Tìm product cần update
+      const productToUpdate = products.find((p) => p.id === id);
+      if (!productToUpdate) return toast.error("Không tìm thấy sản phẩm");
+
+      const productUpdate = {
+        ...productToUpdate,
+        order: updatedOrder,
+      };
+      await updateProduct(id, productUpdate);
+      setIsLoading(false);
+      toast.success(type === "pin" ? "Đã ghim sản phẩm" : "Đã bỏ ghim sản phẩm");
+      fetchData();
+    } catch (error) {
+      console.error("Lỗi khi cập nhật order:", error);
+      toast.error("Không thể cập nhật trạng thái ghim");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className=" py-8 px-4">
+      {isLoading && (
+        <div className="fixed inset-0 top-0 left-0 w-full h-full z-50 bg-muted-foreground/20 flex items-center justify-center">
+          <Spinner />
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="space-y-4 col-span-2">
           {/* Filter controls */}
@@ -203,7 +256,7 @@ export default function ProductPage() {
                       if (typeValue) {
                         return (
                           <SelectItem key={type} value={typeValue} className="capitalize">
-                            {type}
+                            {type === "all" ? "Tất cả" : type}
                           </SelectItem>
                         );
                       }
@@ -220,6 +273,7 @@ export default function ProductPage() {
           </div>
 
           <div className="space-y-4">
+            {/* paging and rows */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Hiển thị:</span>
@@ -234,7 +288,6 @@ export default function ProductPage() {
                     <SelectItem value="50">50</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-sm text-muted-foreground">Sản phẩm</span>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -254,25 +307,26 @@ export default function ProductPage() {
               </div>
             </div>
             {/* Product table */}
-            <div className="border rounded-md">
-              <Table>
+            <div className="border rounded-md w-full overflow-x-auto">
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px]">Ảnh</TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("code")}>
+                    <TableHead>Ảnh</TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 w-24" onClick={() => handleSort("code")}>
                       Mã
-                      {sortColumn === "code" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                      {sortColumn === "code" ? sortDirection === "desc" ? <ArrowDownNarrowWide className="ml-1 h-4 w-4 inline" /> : <ArrowUpNarrowWide className="ml-1 h-4 w-4 inline" /> : null}
                     </TableHead>
                     <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("name")}>
                       Tên
-                      {sortColumn === "name" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                      {sortColumn === "name" ? sortDirection === "desc" ? <ArrowDownNarrowWide className="ml-1 h-4 w-4 inline" /> : <ArrowUpNarrowWide className="ml-1 h-4 w-4 inline" /> : null}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("type")}>
+                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell" onClick={() => handleSort("type")}>
                       Loại
-                      {sortColumn === "type" && <ArrowUpDown className={`ml-1 h-4 w-4 inline ${sortDirection === "desc" ? "rotate-180" : ""}`} />}
+                      {sortColumn === "type" ? sortDirection === "desc" ? <ArrowDownNarrowWide className="ml-1 h-4 w-4 inline" /> : <ArrowUpNarrowWide className="ml-1 h-4 w-4 inline" /> : null}
                     </TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">Giá</TableHead>
-                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell">Chất liệu</TableHead>
+                    <TableHead className="hidden md:table-cell">Báo giá</TableHead>
+                    <TableHead className="hidden md:table-cell">Chất liệu</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -285,16 +339,53 @@ export default function ProductPage() {
                   ) : (
                     currentProducts.map((product) => (
                       <TableRow key={product.id} className={`cursor-pointer hover:bg-muted/50 ${selectedProduct && selectedProduct.id === product.id ? "bg-primary/10" : ""}`} onClick={() => setSelectedProduct(product)}>
-                        <TableCell className="p-2">
+                        <TableCell className="p-2 overflow-hidden">
                           <div className="relative rounded overflow-hidden border w-24">
                             <img src={product.images[0] || "/placeholder.svg"} alt={product.name} className="object-cover h-full w-full" />
                           </div>
                         </TableCell>
-                        <TableCell>{product.code || "-"}</TableCell>
-                        <TableCell>{product.name}</TableCell>
-                        <TableCell className="capitalize">{product.type}</TableCell>
-                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price}</TableCell>
-                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material}</TableCell>
+                        <TableCell>
+                          {product.order === 99 ? (
+                            <div className="flex items-center gap-1">
+                              <span>{product.code || "-"}</span>
+                              <Pin className="w-5 h-5 rotate-45 text-green-600" />
+                            </div>
+                          ) : (
+                            product.code || "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="capitalize">{product.name}</TableCell>
+                        <TableCell className="hidden md:table-cell capitalize">
+                          {product.type === "bạc" && "lắc bạc"}
+                          {product.type === "bạc vàng" && "lắc bạc vàng"}
+                          {product.type === "khối" && "vòng khối"}
+                          {product.type === "bi" && "vòng bi"}
+                          {product.type === "nhẫn bạc" && "nhẫn"}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price.replace(/\\n/g, "")}</TableCell>
+                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material.replace(/\\n/g, "")}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col md:flex-row items-center justify-end gap-1">
+                            {product.order === 99 ? (
+                              <Button size="icon" className="text-white bg-red-500 hover:bg-red-700" onClick={() => handlePin(product.id, "unpin")}>
+                                <PinOff className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button size="icon" variant='outline' className="text-green-500  hover:text-white hover:bg-green-500" onClick={() => handlePin(product.id, "pin")}>
+                                <Pin className="w-4 h-4" />
+                              </Button>
+                            )}
+
+                            <Link to={`/dashboard/edit/${product.id}`}>
+                              <Button size="icon" variant="outline" className="text-primary hover:text-white hover:bg-green-500">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <Button size="icon" variant="outline" className="text-red-500 hover:text-white hover:bg-red-500" onClick={() => handleOpenDialog(product.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
@@ -304,7 +395,7 @@ export default function ProductPage() {
           </div>
         </div>
 
-        <div>
+        <div className="col-span-2 md:col-span-1">
           {/* Detail Column */}
           <Card>
             <CardContent className="space-y-6 p-5">
@@ -314,7 +405,7 @@ export default function ProductPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      copyToClipboard(selectedProduct.price, "Price");
+                      copyToClipboard(selectedProduct.price, "báo giá");
                     }}
                     className="p-1.5 rounded-md hover:bg-muted transition-colors"
                     aria-label="Copy price to clipboard"
@@ -323,12 +414,16 @@ export default function ProductPage() {
                   </button>
                 </div>
                 <p>
-                  {selectedProduct.price.split("\n").map((line, index) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      <br />
-                    </React.Fragment>
-                  ))}
+                  {selectedProduct?.price &&
+                    selectedProduct.price
+                      .replace(/\\n/g, "\n")
+                      .split("\n")
+                      .map((line, index) => (
+                        <React.Fragment key={index}>
+                          {line}
+                          <br />
+                        </React.Fragment>
+                      ))}
                 </p>
               </div>
 
@@ -338,7 +433,7 @@ export default function ProductPage() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      copyToClipboard(selectedProduct.material, "Material");
+                      copyToClipboard(selectedProduct.material, "chất liệu");
                     }}
                     className="p-1.5 rounded-md hover:bg-muted transition-colors"
                     aria-label="Copy material to clipboard"
@@ -347,57 +442,60 @@ export default function ProductPage() {
                   </button>
                 </div>
                 <p>
-                  {/* {selectedProduct.material} */}
-                  {selectedProduct.material.split("\n").map((line, index) => (
-                    <React.Fragment key={index}>
-                      {line}
-                      <br />
-                    </React.Fragment>
-                  ))}
+                  {selectedProduct?.material &&
+                    selectedProduct.material
+                      .replace(/\\n/g, "\n")
+                      .split("\n")
+                      .map((line, index) => (
+                        <React.Fragment key={index}>
+                          {line}
+                          <br />
+                        </React.Fragment>
+                      ))}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <h3 className="font-medium">Ảnh</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  {selectedProduct.images.map((image, index) => (
-                    <div
-                      key={index}
-                      className="flex flex-col justify-center items-center"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        copyImageToClipboard(image, index);
-                      }}
-                    >
-                      <ImageHover imgUrl={image} width={200} height={150} isHoverable={true} />
-                    </div>
-                  ))}
+                  {selectedProduct?.images &&
+                    selectedProduct?.images.map((image, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col justify-center items-center"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyImageToClipboard(image, index);
+                        }}
+                      >
+                        <ImageHover imgUrl={image} width={200} height={150} isHoverable={true} />
+                      </div>
+                    ))}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <h3 className="font-medium">Links</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  {selectedProduct.links.map((link, index) => (
-                    <div key={index} className="relative group">
-                      <a href={link} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-3 border rounded-md hover:bg-muted transition-colors">
-                        <ExternalLink className="h-5 w-5 mb-1 text-primary" />
-                        <span className="text-xs">
-                          Link {selectedProduct.name} {index + 1}
-                        </span>
-                      </a>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyToClipboard(link, `Link ${index + 1}`);
-                        }}
-                        className="absolute top-1 right-1 p-1 rounded-md bg-muted/80 hover:bg-muted transition-opacity opacity-0 group-hover:opacity-100"
-                        aria-label={`Copy link ${index + 1} to clipboard`}
-                      >
-                        {copiedField === `Link ${index + 1}` ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
-                      </button>
-                    </div>
-                  ))}
+                  {selectedProduct?.links &&
+                    selectedProduct.links.map((linkObject, index) => {
+                      // Lấy key và value từ đối tượng trong mảng
+                      const [key, value] = Object.entries(linkObject)[0]; // Lấy ra cặp key-value đầu tiên trong đối tượng
+
+                      return (
+                        <div key={index} className="flex flex-col items-center">
+                          <a
+                            href={value} // value là URL
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center p-3 border rounded-md hover:bg-muted transition-colors w-full max-w-full overflow-hidden"
+                          >
+                            <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis">{key.replace(/link/gi, "")}</span>
+                            <ExternalLink className="w-4 h-4 text-primary ml-2" />
+                          </a>
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             </CardContent>
@@ -437,6 +535,30 @@ export default function ProductPage() {
           </Card>
         </div>
       </div>
+
+      {/* delete dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Xác Nhận Xóa Sản Phẩm</DialogTitle>
+            <DialogDescription>Không thể thôi phục sau khi xóa.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                handleConfirmDelete(deleteId);
+                setIsDeleteOpen(false);
+              }}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

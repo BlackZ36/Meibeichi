@@ -5,6 +5,7 @@ import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./pages/PrivateRoute";
 import DashboardPage from "./pages/DashboardPage";
 import Notfound from "./pages/NotFoundPage";
+import EditProductPage from "./components/edit-product";
 function App() {
   return (
     <>
@@ -15,6 +16,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="*" element={<Notfound />} />
           <Route path="/dashboard/:tab" element={<DashboardPage />} />
+          <Route path="/dashboard/edit/:id" element={<EditProductPage />} />
         </Routes>
       </Router>
       <Toaster richColors position="top-right" expand={true} theme="light" />
