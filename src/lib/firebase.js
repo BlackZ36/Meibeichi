@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc } from "firebase/firestore"; // Firestore imports
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDZMCpQEb5ayYJXdhy2COTn3CYptYSVrjE",
-  authDomain: "meibeichi.firebaseapp.com",
-  projectId: "meibeichi",
-  storageBucket: "meibeichi.firebasestorage.app",
-  messagingSenderId: "90309491677",
-  appId: "1:90309491677:web:2c795b641cc4e506b89434"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
