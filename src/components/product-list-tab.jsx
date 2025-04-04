@@ -95,14 +95,22 @@ export default function ProductPage() {
       );
     }
 
-    // Then sort
     const sorted = filtered.sort((a, b) => {
+      // Ưu tiên order === 99 lên trên
+      if (a.order === 99 && b.order !== 99) return -1;
+      if (b.order === 99 && a.order !== 99) return 1;
+
       const aValue = a[sortColumn] || "";
       const bValue = b[sortColumn] || "";
 
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+
       return 0;
     });
 
@@ -371,7 +379,7 @@ export default function ProductPage() {
                                 <PinOff className="w-4 h-4" />
                               </Button>
                             ) : (
-                              <Button size="icon" variant='outline' className="text-green-500  hover:text-white hover:bg-green-500" onClick={() => handlePin(product.id, "pin")}>
+                              <Button size="icon" variant="outline" className="text-green-500  hover:text-white hover:bg-green-500" onClick={() => handlePin(product.id, "pin")}>
                                 <Pin className="w-4 h-4" />
                               </Button>
                             )}
