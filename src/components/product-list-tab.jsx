@@ -97,8 +97,8 @@ export default function ProductPage() {
 
     const sorted = filtered.sort((a, b) => {
       // Ưu tiên order === 99 lên trên
-      if (a.order === 99 && b.order !== 99) return -1;
-      if (b.order === 99 && a.order !== 99) return 1;
+      // if (a.order === 99 && b.order !== 99) return -1;
+      // if (b.order === 99 && a.order !== 99) return 1;
 
       const aValue = a[sortColumn] || "";
       const bValue = b[sortColumn] || "";
@@ -251,7 +251,7 @@ export default function ProductPage() {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="w-full sm:w-1/3">
               <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="w-full rounded-3xl">
                   <div className="flex items-center gap-2 capitalize">
                     <Filter className="h-4 w-4" />
                     <SelectValue placeholder="Chọn loại" />
@@ -263,8 +263,13 @@ export default function ProductPage() {
                       const typeValue = type.toLowerCase();
                       if (typeValue) {
                         return (
-                          <SelectItem key={type} value={typeValue} className="capitalize">
-                            {type === "all" ? "Tất cả" : type}
+                          <SelectItem key={type} value={typeValue} className="capitalize rounded-3xl">
+                            {type === "all" && "tất cả"}
+                            {type === "bi" && "vòng bi"}
+                            {type === "khối" && "vòng ngọc"}
+                            {type === "nhẫn bạc" && "nhẫn bạc"}
+                            {type === "bạc" && "lắc bạc"}
+                            {type === "bạc vàng" && "lắc bạc - vàng"}
                           </SelectItem>
                         );
                       }
@@ -276,7 +281,7 @@ export default function ProductPage() {
 
             <div className="relative w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Tìm kiếm sản phẩm..." className="pl-8 w-full" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Input type="text" placeholder="Tìm kiếm sản phẩm..." className="pl-8 w-full rounded-3xl" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
 
@@ -286,20 +291,28 @@ export default function ProductPage() {
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">Hiển thị:</span>
                 <Select value={rowsPerPage.toString()} onValueChange={handleRowsPerPageChange}>
-                  <SelectTrigger className="h-8 w-[70px]">
+                  <SelectTrigger className="h-8 w-[70px] rounded-3xl">
                     <SelectValue placeholder={rowsPerPage.toString()} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="5" className="rounded-3xl">
+                      5
+                    </SelectItem>
+                    <SelectItem value="10" className="rounded-3xl">
+                      10
+                    </SelectItem>
+                    <SelectItem value="20" className="rounded-3xl">
+                      20
+                    </SelectItem>
+                    <SelectItem value="50" className="rounded-3xl">
+                      50
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="h-8 w-8">
+                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="h-8 w-8 rounded-3xl">
                   <ChevronLeft className="h-4 w-4" />
                   <span className="sr-only">Trước</span>
                 </Button>
@@ -308,7 +321,7 @@ export default function ProductPage() {
                   Trang {currentPage} của {totalPages || 1}
                 </span>
 
-                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8">
+                <Button variant="outline" size="icon" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0} className="h-8 w-8 rounded-3xl">
                   <ChevronRight className="h-4 w-4" />
                   <span className="sr-only">Sau</span>
                 </Button>
@@ -366,7 +379,7 @@ export default function ProductPage() {
                         <TableCell className="hidden md:table-cell capitalize">
                           {product.type === "bạc" && "lắc bạc"}
                           {product.type === "bạc vàng" && "lắc bạc vàng"}
-                          {product.type === "khối" && "vòng khối"}
+                          {product.type === "khối" && "vòng ngọc"}
                           {product.type === "bi" && "vòng bi"}
                           {product.type === "nhẫn bạc" && "nhẫn"}
                         </TableCell>
@@ -375,21 +388,21 @@ export default function ProductPage() {
                         <TableCell>
                           <div className="flex flex-col md:flex-row items-center justify-end gap-1">
                             {product.order === 99 ? (
-                              <Button size="icon" className="text-white bg-red-500 hover:bg-red-700" onClick={() => handlePin(product.id, "unpin")}>
+                              <Button size="icon" className="rounded-3xl text-white bg-red-500 hover:bg-red-700" onClick={() => handlePin(product.id, "unpin")}>
                                 <PinOff className="w-4 h-4" />
                               </Button>
                             ) : (
-                              <Button size="icon" variant="outline" className="text-green-500  hover:text-white hover:bg-green-500" onClick={() => handlePin(product.id, "pin")}>
+                              <Button size="icon" variant="outline" className="rounded-3xl text-blue-500  hover:text-white hover:bg-blue-500" onClick={() => handlePin(product.id, "pin")}>
                                 <Pin className="w-4 h-4" />
                               </Button>
                             )}
 
                             <Link to={`/dashboard/edit/${product.id}`}>
-                              <Button size="icon" variant="outline" className="text-primary hover:text-white hover:bg-green-500">
+                              <Button size="icon" variant="outline" className="rounded-3xl text-green-500 dark:text-primary hover:text-white hover:bg-green-600">
                                 <Pencil className="w-4 h-4" />
                               </Button>
                             </Link>
-                            <Button size="icon" variant="outline" className="text-red-500 hover:text-white hover:bg-red-500" onClick={() => handleOpenDialog(product.id)}>
+                            <Button size="icon" variant="outline" className="rounded-3xl text-red-500 hover:text-white hover:bg-red-600" onClick={() => handleOpenDialog(product.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>

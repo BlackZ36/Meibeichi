@@ -33,7 +33,7 @@ export default function LoginPage() {
       toast.error("Invalid username or password.");
     }
     localStorage.setItem("user", user);
-    toast.success(`Welcome back, ${user}!`);
+    toast.success(`Chào mừng cô chủ sốp đáng iu ❤️😍`);
     navigate("/dashboard/general");
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Minus, Plus, Trash2, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,11 @@ export default function EditProductPage() {
   const [product, setProduct] = useState(null);
   const [newImages, setNewImages] = useState([]);
   const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+  const dropZoneRef = useRef(null);
+  const pasteFieldRef = useRef(null);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -67,16 +72,16 @@ export default function EditProductPage() {
     setProduct({ ...product, images: updatedImages });
   };
 
-  const handleImageUpload = (e) => {
-    if (!e.target.files || !e.target.files.length) return;
+  // const handleImageUpload = (e) => {
+  //   if (!e.target.files || !e.target.files.length) return;
 
-    const files = Array.from(e.target.files);
-    setNewImages((prev) => [...prev, ...files]);
+  //   const files = Array.from(e.target.files);
+  //   setNewImages((prev) => [...prev, ...files]);
 
-    // Create preview URLs for the new images
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setNewImagePreviews((prev) => [...prev, ...newPreviews]);
-  };
+  //   // Create preview URLs for the new images
+  //   const newPreviews = files.map((file) => URL.createObjectURL(file));
+  //   setNewImagePreviews((prev) => [...prev, ...newPreviews]);
+  // };
 
   const handleRemoveNewImage = (index) => {
     const updatedImages = newImages.filter((_, i) => i !== index);
@@ -146,6 +151,97 @@ export default function EditProductPage() {
     }
   };
 
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setNewImages((prev) => [...prev, ...files]);
+
+      // Create image previews
+      const newPreviews = files.map((file) => URL.createObjectURL(file));
+      setNewImagePreviews((prev) => [...prev, ...newPreviews]);
+    }
+  };
+
+  // Handle drag events
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files?.length) {
+      // Create a synthetic event object with the files
+      const syntheticEvent = {
+        target: {
+          files: e.dataTransfer.files,
+        },
+      };
+      handleImageChange(syntheticEvent);
+    }
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const dataTransfer = new DataTransfer();
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          dataTransfer.items.add(file);
+        }
+      }
+    }
+
+    if (dataTransfer.files.length > 0) {
+      const syntheticEvent = {
+        target: {
+          files: dataTransfer.files, // Đây là FileList hợp lệ
+        },
+      };
+      handleImageChange(syntheticEvent);
+    }
+  };
+
+  // Add paste event listener to the paste field
+  useEffect(() => {
+    const pasteField = pasteFieldRef.current;
+
+    if (pasteField) {
+      //pasteField.addEventListener("paste", handlePaste);
+
+      // Also add global paste event
+      window.addEventListener("paste", handlePaste);
+    }
+
+    window.addEventListener("paste", handlePaste);
+
+    return () => {
+      if (pasteField) {
+        pasteField.removeEventListener("paste", handlePaste);
+      }
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, []);
+
   if (!product) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -171,7 +267,9 @@ export default function EditProductPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>{product.code} - {product.name}</CardTitle>
+            <CardTitle>
+              {product.code} - {product.name}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Type Field - Select Dropdown */}
@@ -230,14 +328,13 @@ export default function EditProductPage() {
 
             {/* Links Section */}
             <div className="space-y-4">
-              <div className="flex items-center justify-start gap-4">
+              <div className="flex items-center justify-between gap-4">
                 <Label>Links</Label>
                 <Button type="button" variant="default" size="sm" onClick={handleAddLink}>
                   <Plus className="w-4 h-4" />
                   Thêm Link
                 </Button>
               </div>
-
               {product.links.map((link, index) => (
                 <div key={index} className="flex items-center gap-2 mt-2">
                   <div className="w-1/4">
@@ -255,52 +352,64 @@ export default function EditProductPage() {
               ))}
             </div>
 
-            {/* Images Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-start gap-2">
-                <Label>Images</Label>
+            <Card className="w-full pt-3">
+              <CardContent>
                 <div>
-                  <input id="image-upload" type="file" multiple accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  <label htmlFor="image-upload">
-                    <Button type="button" variant="default" size="sm" className="cursor-pointer" asChild>
-                      <span>
-                        <Upload className="h-4 w-4" />
-                        Thêm ảnh
-                      </span>
-                    </Button>
-                  </label>
-                </div>
-              </div>
-
-              {/* Existing Images */}
-
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {/* Render ảnh từ product.images */}
-                {product.images.length > 0 &&
-                  product.images.map((image, index) => (
-                    <div key={index} className="relative group">
-                      <div className="aspect-square relative overflow-hidden rounded-md border">
-                        <img src={image || "/placeholder.svg"} alt={`Product image ${index + 1}`} className="object-cover w-full h-full" />
-                      </div>
-                      <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveImage(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-
-                {/* Render ảnh mới được chọn */}
-                {newImagePreviews.map((preview, index) => (
-                  <div key={`new-${index}`} className="relative group">
-                    <div className="aspect-square relative overflow-hidden rounded-md border">
-                      <img src={preview || "/placeholder.svg"} alt={`New image ${index + 1}`} className="object-cover w-full h-full" />
-                    </div>
-                    <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleRemoveNewImage(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="my-3">
+                    <Input id="images" type="file" accept="image/*" multiple onChange={handleImageChange} ref={fileInputRef} className="hidden" />
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* Drag and drop area */}
+                  <div
+                    ref={dropZoneRef}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                      isDragging ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50 hover:bg-muted/5"
+                    }`}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                      <div className="rounded-full bg-primary/10 p-3">
+                        <Upload className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Kéo thả ảnh vào đây</p>
+                        <p className="text-xs text-muted-foreground mt-1">Hoặc click để chọn ảnh</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {(product.images.length > 0 || newImagePreviews.length > 0) && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-2">
+                      {[...product.images, ...newImagePreviews].map((preview, index) => {
+                        const isOldImage = index < product.images.length;
+
+                        return (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square relative overflow-hidden rounded-md border">
+                              <img src={preview || "/placeholder.svg"} alt={`Product image ${index + 1}`} className="object-cover w-full h-full" />
+                            </div>
+
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => (isOldImage ? handleRemoveImage(index) : handleRemoveNewImage(index - product.images.length))}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isLoading} className="w-full mt-5" onClick={handleSubmit}>

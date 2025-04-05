@@ -6,6 +6,7 @@ import AddProductTab from "@/components/add-product-tab";
 import ImageHover from "@/components/image-hover";
 import ChatTab from "@/components/chat-tab";
 import EditProductPage from "@/components/edit-product";
+import { Navbar } from "@/components/navbar";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -32,20 +33,20 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Navbar />
       <main className="flex-1 m-1 p-1 md:p-4 md:m-4">
-        <p className="text-center text-3xl mb-5">Meibeichi Bé Nhỏ</p>
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full h-auto">
-            <TabsTrigger value="general" className="w-full text-center">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-2 md:grid-cols-3 rounded-3xl gap-4 w-full h-auto">
+            <TabsTrigger value="general" className="w-full text-center rounded-3xl">
               Chung
             </TabsTrigger>
-            <TabsTrigger value="chat" className="w-full text-center">
+            <TabsTrigger value="chat" className="w-full text-center rounded-3xl">
               Chat
             </TabsTrigger>
             {/* <TabsTrigger value="settings" disabled={localStorage.getItem("user") !== "admin"} className="w-full text-center">
               Cài Đặt
             </TabsTrigger> */}
-            <TabsTrigger value="add" className="w-full text-center">
+            <TabsTrigger value="add" className="w-full text-center rounded-3xl">
               Thêm Item
             </TabsTrigger>
             {/* <TabsTrigger value="addchat" className="w-full text-center">

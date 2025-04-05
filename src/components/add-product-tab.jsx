@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { PlusCircle, Trash2, Upload, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Clipboard, PlusCircle, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Spinner } from "./ui/spinner";
 import { addProduct } from "@/services/ProductService";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
 
 export default function AddProductTab() {
   const navigate = useNavigate();
@@ -25,7 +26,10 @@ export default function AddProductTab() {
     links: [{ key: "", value: "" }],
   });
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
+  const dropZoneRef = useRef(null);
+  const pasteFieldRef = useRef(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -60,24 +64,6 @@ export default function AddProductTab() {
     });
   };
 
-  const handleImageChange = (e) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      setFormData({ ...formData, images: [...formData.images, ...filesArray] });
-
-      // Create image previews
-      filesArray.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (event.target.result) {
-            setImagePreviews((prev) => [...prev, event.target.result]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
   const removeImage = (index) => {
     const updatedImages = formData.images.filter((_, i) => i !== index);
     const updatedPreviews = imagePreviews.filter((_, i) => i !== index);
@@ -103,7 +89,7 @@ export default function AddProductTab() {
         ...formData,
         images: [],
         date: new Date(),
-        order: 0
+        order: 0,
       };
 
       // Upload tất cả các ảnh và lấy lại URL từ Cloudinary
@@ -135,6 +121,105 @@ export default function AddProductTab() {
     }
   };
 
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setFormData({ ...formData, images: [...formData.images, ...filesArray] });
+
+      // Create image previews
+      filesArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target.result) {
+            setImagePreviews((prev) => [...prev, event.target.result]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  // Handle drag events
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files?.length) {
+      // Create a synthetic event object with the files
+      const syntheticEvent = {
+        target: {
+          files: e.dataTransfer.files,
+        },
+      };
+      handleImageChange(syntheticEvent);
+    }
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    const dataTransfer = new DataTransfer();
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          dataTransfer.items.add(file);
+        }
+      }
+    }
+
+    if (dataTransfer.files.length > 0) {
+      const syntheticEvent = {
+        target: {
+          files: dataTransfer.files, // Đây là FileList hợp lệ
+        },
+      };
+      handleImageChange(syntheticEvent);
+    }
+  };
+
+  // Add paste event listener to the paste field
+  useEffect(() => {
+    const pasteField = pasteFieldRef.current;
+
+    if (pasteField) {
+      //pasteField.addEventListener("paste", handlePaste);
+
+      // Also add global paste event
+      window.addEventListener("paste", handlePaste);
+    }
+
+    window.addEventListener("paste", handlePaste);
+
+    return () => {
+      if (pasteField) {
+        pasteField.removeEventListener("paste", handlePaste);
+      }
+      window.removeEventListener("paste", handlePaste);
+    };
+  }, []);
+
+
   return (
     <>
       {isAdding && (
@@ -148,11 +233,11 @@ export default function AddProductTab() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="code">Code</Label>
-                <Input id="code" name="code" value={formData.code} onChange={handleInputChange} placeholder="Nhập code" />
+                <Input id="code" name="code" value={formData.code} onChange={handleInputChange} placeholder="Nhập code" className='rounded-3xl'/>
               </div>
               <div>
                 <Label htmlFor="name">Tên</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nhập tên sản phẩm" required />
+                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nhập tên sản phẩm" required className='rounded-3xl'/>
               </div>
 
               <div>
@@ -160,7 +245,7 @@ export default function AddProductTab() {
                   Loại
                 </Label>
                 <Select value={formData.type} onValueChange={handleTypeChange}>
-                  <SelectTrigger className={`${typeError && "border border-red-500"}`}>
+                  <SelectTrigger className={`${typeError && "border border-red-500"} rounded-3xl`}>
                     <SelectValue placeholder="Chọn loại hàng" />
                   </SelectTrigger>
                   <SelectContent>
@@ -184,57 +269,83 @@ export default function AddProductTab() {
               </div>
 
               <div>
-                <Label htmlFor="images">Ảnh</Label>
-                <div className="my-3">
-                  <Input id="images" type="file" accept="image/*" multiple onChange={handleImageChange} ref={fileInputRef} className="hidden" />
-                  <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="w-4 h-4 mr-1" />
-                    Chọn ảnh
+                <div className="flex justify-between items-end gap-4">
+                  <Label>Links</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addLinkField} className="mt-2 rounded-3xl" >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Thêm Link
                   </Button>
                 </div>
-
-                {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <div className="aspect-square relative overflow-hidden rounded-md border">
-                          <img src={preview || "/placeholder.svg"} alt={`Product image ${index + 1}`} className="object-cover" />
-                        </div>
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label>Links</Label>
                 {formData.links.map((link, index) => (
                   <div key={index} className="flex items-center gap-2 mt-2">
                     <div className="w-1/4">
-                      <Input value={link.key} onChange={(e) => handleKeyChange(index, e.target.value)} placeholder="tên" />
+                      <Input value={link.key} onChange={(e) => handleKeyChange(index, e.target.value)} placeholder="tên" className='rounded-3xl'/>
                     </div>
                     <div className="w-3/4 flex items-center gap-2">
-                      <Input value={link.value} onChange={(e) => handleValueChange(index, e.target.value)} placeholder="Nhập link" />
+                      <Input value={link.value} onChange={(e) => handleValueChange(index, e.target.value)} placeholder="Nhập link" className='rounded-3xl'/>
                       {formData.links.length > 1 && (
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLink(index)}>
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLink(index)} >
                           <X className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
                   </div>
                 ))}
-
-                <Button type="button" variant="outline" size="sm" onClick={addLinkField} className="mt-2">
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Thêm Link
-                </Button>
               </div>
+
+              <Card className="w-full pt-3">
+                <CardContent>
+                  <div>
+                    <div className="my-3">
+                      <Input id="images" type="file" accept="image/*" multiple onChange={handleImageChange} ref={fileInputRef} className="hidden" />
+                    </div>
+
+                    {/* Drag and drop area */}
+                    <div
+                      ref={dropZoneRef}
+                      onDragEnter={handleDragEnter}
+                      onDragLeave={handleDragLeave}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`relative h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                        isDragging ? "border-primary bg-primary/5" : "border-muted hover:border-primary/50 hover:bg-muted/5"
+                      }`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-2 p-4 text-center">
+                        <div className="rounded-full bg-primary/10 p-3">
+                          <Upload className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">Kéo thả ảnh vào đây</p>
+                          <p className="text-xs text-muted-foreground mt-1">Hoặc click để chọn ảnh</p>
+                        </div>
+                      </div>
+                    </div>
+
+
+                    {/* Image previews */}
+                    {imagePreviews.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-2">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square relative overflow-hidden rounded-md border">
+                              <img src={preview || "/placeholder.svg"} alt={`Product image ${index + 1}`} className="object-cover w-full h-full" />
+                            </div>
+
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full bg-primary rounded-3xl">
               Thêm
             </Button>
           </form>
