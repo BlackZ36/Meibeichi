@@ -3,9 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate, useParams } from "react-router-dom";
 import ProductPage from "@/components/product-list-tab";
 import AddProductTab from "@/components/add-product-tab";
-import ImageHover from "@/components/image-hover";
 import ChatTab from "@/components/chat-tab";
-import EditProductPage from "@/components/edit-product";
 import { Navbar } from "@/components/navbar";
 
 export default function Dashboard() {

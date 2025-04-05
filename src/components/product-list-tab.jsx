@@ -30,7 +30,7 @@ export default function ProductPage() {
   const [copiedField, setCopiedField] = useState(null);
   const [copyingImage, setCopyingImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [filteredAndSortedProducts, setFilteredAndSortedProducts] = useState([]);
 
   //fetch const
@@ -431,7 +431,7 @@ export default function ProductPage() {
                     className="p-1.5 rounded-md hover:bg-muted transition-colors"
                     aria-label="Copy price to clipboard"
                   >
-                    {copiedField === "Price" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                    {copiedField === "báo giá" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
                   </button>
                 </div>
                 <p>
@@ -459,7 +459,7 @@ export default function ProductPage() {
                     className="p-1.5 rounded-md hover:bg-muted transition-colors"
                     aria-label="Copy material to clipboard"
                   >
-                    {copiedField === "Material" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                    {copiedField === "chất liệu" ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
                   </button>
                 </div>
                 <p>

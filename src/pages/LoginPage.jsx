@@ -1,10 +1,8 @@
-import React from "react";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -15,7 +13,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     const isLoggedIn = !!localStorage.getItem("user");
-    console.log("login:", isLoggedIn);
 
     if (isLoggedIn) {
       navigate("/dashboard/general");
@@ -38,27 +35,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-primary-foreground">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Meibeichi</CardTitle>
-          <CardDescription>Đăng nhập thông tin tài khoản người dùng</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="username">Tài khoản</Label>
-            <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nhập tên tài khoản..." required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Mật khẩu</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Nhập mật khẩu..." required />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={handleLogin}>
-            Đăng nhập
-          </Button>
-        </CardFooter>
+        <form onSubmit={handleLogin}>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold">Meibeichi</CardTitle>
+            <CardDescription>Đăng nhập thông tin tài khoản người dùng</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="username">Tài khoản</Label>
+              <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Nhập tên tài khoản..." required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Mật khẩu</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Nhập mật khẩu..." required />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full">
+              Đăng nhập
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
     </div>
   );
