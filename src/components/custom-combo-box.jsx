@@ -100,20 +100,23 @@ export function Combobox({ value, onValueChange, placeholder, className, error }
                 types.map((option) => (
                   <CommandItem
                     key={option.id}
-                    value={option.name}
+                    value={option.value}
                     onSelect={() => {
                       onValueChange(option.name);
                       setOpen(false);
                     }}
-                    className="w-[200px] flex flex-row justify-between p-0"
+                    className="w-[200px] flex flex-row items-center justify-between p-0 group"
                   >
-                    <Check className={cn("mr-4 h-4 w-4", value === option.value ? "opacity-100" : "opacity-0")} />
-                    {option.name}
+                    <div className="flex items-center flex-1 space-x-2">
+                      <Check className={cn("h-4 w-4", value === option.name ? "opacity-100" : "opacity-0")} />
+                      <span>{option.name}</span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-white hover:text-red-500"
-                      onClick={() => {
+                      className="text-white hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation(); // tránh gọi onSelect khi click vào nút
                         handleDeleteCategory(option.id);
                         onValueChange("");
                       }}
@@ -124,12 +127,12 @@ export function Combobox({ value, onValueChange, placeholder, className, error }
                 ))}
 
               {isAddingNew ? (
-                <div className="flex items-center gap-2 p-2">
+                <div className="flex items-center flex-1 space-x-2 mt-2">
                   <Input
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
                     placeholder="Nhập giá trị mới"
-                    className="h-8"
+                    className="h-8 w-32"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -149,9 +152,9 @@ export function Combobox({ value, onValueChange, placeholder, className, error }
                   </Button>
                 </div>
               ) : (
-                <CommandItem onSelect={handleAddCustomValue} className="text-primary">
-                  <Plus className="mr-2 h-4 w-4" />
+                <CommandItem onSelect={handleAddCustomValue} className="text-primary flex justify-between text-center">
                   Thêm mới
+                  <Plus className="h-4 w-4" />
                 </CommandItem>
               )}
             </CommandGroup>

@@ -37,9 +37,9 @@ export default function AddProductTab() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await getAllCategories()
-        console.log('categories', response);
-        
+        const response = await getAllCategories();
+        console.log("categories", response);
+
         setTypes(response);
       } catch (error) {
         toast.error(error);
@@ -141,10 +141,27 @@ export default function AddProductTab() {
   const handleImageChange = (e) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      setFormData({ ...formData, images: [...formData.images, ...filesArray] });
 
-      // Create image previews
-      filesArray.forEach((file) => {
+      // Lọc ra những file không trùng
+      const newFiles = filesArray.filter((newFile) => {
+        return !formData.images.some((existingFile) => existingFile.name === newFile.name && existingFile.size === newFile.size);
+      });
+
+      // Đổi tên file để tránh trùng nếu muốn (thêm timestamp chẳng hạn)
+      const renamedFiles = newFiles.map((file) => {
+        const timestamp = Date.now();
+        const newName = `${timestamp}-${file.name}`;
+        return new File([file], newName, { type: file.type });
+      });
+
+      // Cập nhật formData
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...renamedFiles],
+      }));
+
+      // Tạo previews cho các file mới
+      renamedFiles.forEach((file) => {
         const reader = new FileReader();
         reader.onload = (event) => {
           if (event.target.result) {
@@ -261,18 +278,6 @@ export default function AddProductTab() {
                   Loại
                 </Label>
                 <Combobox options={types} value={formData.type} onValueChange={handleTypeChange} placeholder="Chọn loại hàng" className="rounded-3xl" error={typeError} allowCustomValue={true} />
-                {/* <Select value={formData.type} onValueChange={handleTypeChange}>
-                  <SelectTrigger className={`${typeError && "border border-red-500"} rounded-3xl`}>
-                    <SelectValue placeholder="Chọn loại hàng" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="bạc">Bạc</SelectItem>
-                    <SelectItem value="bạc vàng">Bạc Vàng</SelectItem>
-                    <SelectItem value="nhẫn bạc">Nhẫn Bạc</SelectItem>
-                    <SelectItem value="khối">Vòng Khối</SelectItem>
-                    <SelectItem value="bi">Vòng Bi</SelectItem>
-                  </SelectContent>
-                </Select> */}
               </div>
 
               <div>

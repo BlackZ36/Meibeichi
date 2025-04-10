@@ -14,6 +14,7 @@ import { deleteProduct, getAllProducts, updateProduct } from "@/services/Product
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Spinner } from "./ui/spinner";
+import { getAllCategories } from "@/services/CategoryService";
 
 export default function ProductPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +49,15 @@ export default function ProductPage() {
     setChats(data.chats);
     //filter and sort
     setFilteredAndSortedProducts(productResponse);
+    //get type
+    const typeResponse = await getAllCategories();
+
     if (res && res.length > 0) {
-      setTypes(["all", ...Array.from(new Set(res.map((product) => product?.type || "")))]);
+      setTypes([{ id: "abc", name: "Tất Cả", value: "all" }, ...typeResponse]);
     } else {
-      setTypes(["all"]);
+      setTypes([{ id: "abc", name: "Tất Cả", value: "all" }]);
     }
+    console.log(types);
   };
 
   useEffect(() => {
@@ -121,16 +126,6 @@ export default function ProductPage() {
     setCurrentPage(1);
   }, [products, sortColumn, sortDirection, selectedType, searchTerm]);
 
-  // Update selected product when filtered products change
-  // This ensures we always have a valid selected product
-  //   useMemo(() => {
-  //     if (!products) return null;
-  //     if (filteredAndSortedProducts.length > 0 && !filteredAndSortedProducts.some((p) => p.id === selectedProduct.id)) {
-  //       setSelectedProduct(filteredAndSortedProducts[0]);
-  //     }
-  //   }, [filteredAndSortedProducts, selectedProduct.id]);
-
-  //copy image
   const copyImageToClipboard = async (imageUrl, index) => {
     try {
       setCopyingImage(index);
@@ -260,20 +255,11 @@ export default function ProductPage() {
                 <SelectContent>
                   {types &&
                     types.map((type) => {
-                      const typeValue = type.toLowerCase();
-                      if (typeValue) {
-                        return (
-                          <SelectItem key={type} value={typeValue} className="capitalize rounded-3xl">
-                            {type === "all" && "tất cả"}
-                            {type === "bi" && "vòng bi"}
-                            {type === "khối" && "vòng ngọc"}
-                            {type === "nhẫn bạc" && "nhẫn bạc"}
-                            {type === "bạc" && "lắc bạc"}
-                            {type === "bạc vàng" && "lắc bạc - vàng"}
-                          </SelectItem>
-                        );
-                      }
-                      return null; // Bỏ qua nếu value là chuỗi rỗng
+                      return (
+                        <SelectItem key={type.id} value={type.value} className="capitalize rounded-3xl">
+                          {type.name}
+                        </SelectItem>
+                      );
                     })}
                 </SelectContent>
               </Select>
@@ -377,11 +363,7 @@ export default function ProductPage() {
                         </TableCell>
                         <TableCell className="capitalize">{product.name}</TableCell>
                         <TableCell className="hidden md:table-cell capitalize">
-                          {product.type === "bạc" && "lắc bạc"}
-                          {product.type === "bạc vàng" && "lắc bạc vàng"}
-                          {product.type === "khối" && "vòng ngọc"}
-                          {product.type === "bi" && "vòng bi"}
-                          {product.type === "nhẫn bạc" && "nhẫn"}
+                          {product.type}
                         </TableCell>
                         <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price.replace(/\\n/g, "")}</TableCell>
                         <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material.replace(/\\n/g, "")}</TableCell>

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getProductById, updateProduct } from "@/services/ProductService";
 import { UploadImageToStorage } from "@/services/uploadImage";
 import { Spinner } from "./ui/spinner";
+import { getAllCategories } from "@/services/CategoryService";
 
 export default function EditProductPage() {
   const navigate = useNavigate();
@@ -25,17 +26,21 @@ export default function EditProductPage() {
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
   const pasteFieldRef = useRef(null);
+  const [types, setTypes] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         // In a real application, you would fetch from your API
         const product = await getProductById(id);
+        const typeResponse = await getAllCategories();
 
         //updated link
         const links = product.links.map((linkObj) => Object.entries(linkObj).map(([key, value]) => ({ key, value }))).flat();
 
         setProduct({ ...product, links: links });
+        setTypes(typeResponse);
+        console.log(types);
 
         setIsLoading(false);
       } catch (error) {
@@ -71,17 +76,6 @@ export default function EditProductPage() {
     const updatedImages = product.images.filter((_, i) => i !== index);
     setProduct({ ...product, images: updatedImages });
   };
-
-  // const handleImageUpload = (e) => {
-  //   if (!e.target.files || !e.target.files.length) return;
-
-  //   const files = Array.from(e.target.files);
-  //   setNewImages((prev) => [...prev, ...files]);
-
-  //   // Create preview URLs for the new images
-  //   const newPreviews = files.map((file) => URL.createObjectURL(file));
-  //   setNewImagePreviews((prev) => [...prev, ...newPreviews]);
-  // };
 
   const handleRemoveNewImage = (index) => {
     const updatedImages = newImages.filter((_, i) => i !== index);
@@ -280,11 +274,12 @@ export default function EditProductPage() {
                   <SelectValue placeholder="Chọn loại hàng" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bạc">Bạc</SelectItem>
-                  <SelectItem value="bạc vàng">Bạc Vàng</SelectItem>
-                  <SelectItem value="nhẫn bạc">Nhẫn Bạc</SelectItem>
-                  <SelectItem value="khối">Vòng Khối</SelectItem>
-                  <SelectItem value="bi">Vòng Bi</SelectItem>
+                  {types &&
+                    types.map((type) => (
+                      <SelectItem key={type.id} value={type.value}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
