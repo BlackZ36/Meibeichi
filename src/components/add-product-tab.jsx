@@ -101,9 +101,13 @@ export default function AddProductTab() {
 
     setIsAdding(true);
     try {
+      //type
+      const matchedType = types.find((type) => type.name === formData.type);
+
       // Tạo form data từ các trường trong form
       const formDataForJson = {
         ...formData,
+        type: matchedType ? matchedType.value : "", // chuyển name -> value
         images: [],
         date: new Date(),
         order: 0,
@@ -125,8 +129,6 @@ export default function AddProductTab() {
         .map((item) => ({
           [item.key]: item.value,
         }));
-
-      console.log("Dữ liệu sản phẩm sau khi thêm ảnh:", JSON.stringify(formDataForJson, null, 2));
 
       await addProduct(formDataForJson);
       toast.success("Sản phẩm đã được thêm thành công!");
