@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Spinner } from "./ui/spinner";
 import { addProduct } from "@/services/ProductService";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Combobox } from "./custom-combo-box";
+import { getAllCategories } from "@/services/CategoryService";
 
 export default function AddProductTab() {
   const navigate = useNavigate();
@@ -30,6 +32,21 @@ export default function AddProductTab() {
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
   const pasteFieldRef = useRef(null);
+  const [types, setTypes] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await getAllCategories()
+        console.log('categories', response);
+        
+        setTypes(response);
+      } catch (error) {
+        toast.error(error);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -219,7 +236,6 @@ export default function AddProductTab() {
     };
   }, []);
 
-
   return (
     <>
       {isAdding && (
@@ -233,18 +249,19 @@ export default function AddProductTab() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="code">Code</Label>
-                <Input id="code" name="code" value={formData.code} onChange={handleInputChange} placeholder="Nhập code" className='rounded-3xl'/>
+                <Input id="code" name="code" value={formData.code} onChange={handleInputChange} placeholder="Nhập code" className="rounded-3xl" />
               </div>
               <div>
                 <Label htmlFor="name">Tên</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nhập tên sản phẩm" required className='rounded-3xl'/>
+                <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Nhập tên sản phẩm" required className="rounded-3xl" />
               </div>
 
               <div>
                 <Label htmlFor="type" className={`${typeError && "text-red-500"}`}>
                   Loại
                 </Label>
-                <Select value={formData.type} onValueChange={handleTypeChange}>
+                <Combobox options={types} value={formData.type} onValueChange={handleTypeChange} placeholder="Chọn loại hàng" className="rounded-3xl" error={typeError} allowCustomValue={true} />
+                {/* <Select value={formData.type} onValueChange={handleTypeChange}>
                   <SelectTrigger className={`${typeError && "border border-red-500"} rounded-3xl`}>
                     <SelectValue placeholder="Chọn loại hàng" />
                   </SelectTrigger>
@@ -255,7 +272,7 @@ export default function AddProductTab() {
                     <SelectItem value="khối">Vòng Khối</SelectItem>
                     <SelectItem value="bi">Vòng Bi</SelectItem>
                   </SelectContent>
-                </Select>
+                </Select> */}
               </div>
 
               <div>
@@ -271,7 +288,7 @@ export default function AddProductTab() {
               <div>
                 <div className="flex justify-between items-end gap-4">
                   <Label>Links</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={addLinkField} className="mt-2 rounded-3xl" >
+                  <Button type="button" variant="outline" size="sm" onClick={addLinkField} className="mt-2 rounded-3xl">
                     <PlusCircle className="w-4 h-4 mr-2" />
                     Thêm Link
                   </Button>
@@ -279,12 +296,12 @@ export default function AddProductTab() {
                 {formData.links.map((link, index) => (
                   <div key={index} className="flex items-center gap-2 mt-2">
                     <div className="w-1/4">
-                      <Input value={link.key} onChange={(e) => handleKeyChange(index, e.target.value)} placeholder="tên" className='rounded-3xl'/>
+                      <Input value={link.key} onChange={(e) => handleKeyChange(index, e.target.value)} placeholder="tên" className="rounded-3xl" />
                     </div>
                     <div className="w-3/4 flex items-center gap-2">
-                      <Input value={link.value} onChange={(e) => handleValueChange(index, e.target.value)} placeholder="Nhập link" className='rounded-3xl'/>
+                      <Input value={link.value} onChange={(e) => handleValueChange(index, e.target.value)} placeholder="Nhập link" className="rounded-3xl" />
                       {formData.links.length > 1 && (
-                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLink(index)} >
+                        <Button type="button" variant="destructive" size="icon" onClick={() => removeLink(index)}>
                           <X className="w-4 h-4" />
                         </Button>
                       )}
@@ -322,7 +339,6 @@ export default function AddProductTab() {
                         </div>
                       </div>
                     </div>
-
 
                     {/* Image previews */}
                     {imagePreviews.length > 0 && (
