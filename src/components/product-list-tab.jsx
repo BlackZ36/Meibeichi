@@ -15,6 +15,8 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Spinner } from "./ui/spinner";
 import { getAllCategories } from "@/services/CategoryService";
+import { vi } from "date-fns/locale";
+import { format } from "date-fns";
 
 export default function ProductPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +39,7 @@ export default function ProductPage() {
   //fetch const
   const fetchData = async () => {
     const res = await getAllProducts();
+    console.log(res);
 
     const productResponse1 = res.sort((a, b) => a.date - b.date);
 
@@ -64,6 +67,21 @@ export default function ProductPage() {
     fetchData();
   }, []);
 
+  const firestoreToDate = (timestamp) => {
+    if (!timestamp || !timestamp.seconds) return new Date();
+    return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+  };
+
+  const formatDateTime = (date) => {
+    const d = firestoreToDate(date);
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const year = d.getFullYear();
+
+    return `${hours}:${minutes}, ${day}/${month}/${year}`;
+  };
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedProducts.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -107,6 +125,15 @@ export default function ProductPage() {
 
       const aValue = a[sortColumn] || "";
       const bValue = b[sortColumn] || "";
+
+      // Xử lý sắp xếp theo ngày tháng
+      if (sortColumn.includes("date") || sortColumn.includes("Date") || sortColumn.includes("time") || sortColumn.includes("Time")) {
+        // Chuyển đổi Firestore timestamp thành Date object nếu cần
+        const dateA = aValue?.seconds ? new Date(aValue.seconds * 1000) : new Date(aValue);
+        const dateB = bValue?.seconds ? new Date(bValue.seconds * 1000) : new Date(bValue);
+
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
 
       if (typeof aValue === "string" && typeof bValue === "string") {
         return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
@@ -331,8 +358,12 @@ export default function ProductPage() {
                       Loại
                       {sortColumn === "type" ? sortDirection === "desc" ? <ArrowDownNarrowWide className="ml-1 h-4 w-4 inline" /> : <ArrowUpNarrowWide className="ml-1 h-4 w-4 inline" /> : null}
                     </TableHead>
-                    <TableHead className="hidden md:table-cell">Báo giá</TableHead>
-                    <TableHead className="hidden md:table-cell">Chất liệu</TableHead>
+                    {/* <TableHead className="hidden md:table-cell">Báo giá</TableHead>*/}
+                    {/* <TableHead className="hidden md:table-cell">Chất liệu</TableHead>  */}
+                    <TableHead className="cursor-pointer hover:bg-muted/50 hidden md:table-cell" onClick={() => handleSort("date")}>
+                      Ngày Thêm
+                      {sortColumn === "date" ? sortDirection === "desc" ? <ArrowDownNarrowWide className="ml-1 h-4 w-4 inline" /> : <ArrowUpNarrowWide className="ml-1 h-4 w-4 inline" /> : null}
+                    </TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -362,11 +393,10 @@ export default function ProductPage() {
                           )}
                         </TableCell>
                         <TableCell className="capitalize">{product.name}</TableCell>
-                        <TableCell className="hidden md:table-cell capitalize">
-                          {product.type}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price.replace(/\\n/g, "")}</TableCell>
-                        <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material.replace(/\\n/g, "")}</TableCell>
+                        <TableCell className="hidden md:table-cell capitalize">{product.type}</TableCell>
+                        <TableCell className="hidden md:table-cell capitalize"> {formatDateTime(product.date)} </TableCell>
+                        {/* <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.price.replace(/\\n/g, "")}</TableCell> */}
+                        {/* <TableCell className="hidden md:table-cell whitespace-nowrap truncate max-w-[200px]">{product.material.replace(/\\n/g, "")}</TableCell> */}
                         <TableCell>
                           <div className="flex flex-col md:flex-row items-center justify-end gap-1">
                             {product.order === 99 ? (
