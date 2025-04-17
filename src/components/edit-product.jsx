@@ -238,8 +238,8 @@ export default function EditProductPage() {
 
   if (!product) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p>Không tìm thấy sản phẩm</p>
+      <div className="fixed inset-0 top-0 left-0 w-full h-full z-50 bg-muted-foreground/20 flex items-center justify-center">
+        <Spinner />
       </div>
     );
   }
