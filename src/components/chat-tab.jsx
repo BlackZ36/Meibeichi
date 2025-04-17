@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Copy, Edit, Plus, Trash, Pin, PinOff, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Copy, Edit, Plus, Trash, Pin, PinOff, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner";
 import { addChat, deleteChat, getAllChats, updateChat } from "@/services/ChatService";
 import { Spinner } from "./ui/spinner";
+import { Textarea } from "./ui/textarea";
 
 export default function ContentManagement() {
   const [chatItems, setChatItems] = useState([]);
@@ -45,10 +46,12 @@ export default function ContentManagement() {
 
   // Copy to clipboard function
   const handleCopyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+    // Thay thế tất cả \n bằng ký tự xuống dòng thực sự
+    const processedText = text.replace(/\\n/g, "\n").replace(/\n/g, "\n");
+
+    navigator.clipboard.writeText(processedText);
     toast.success("Đã copy chat vào bộ nhớ");
   };
-
   // Delete chat function
   const handleDeleteChat = async (id) => {
     setIsDeleteLoading(true);
@@ -116,7 +119,7 @@ export default function ContentManagement() {
     setIsAddingLoading(true);
     try {
       // Kiểm tra dữ liệu đầu vào
-      if (!newChat.title.trim() || newChat.values.some((v) => !v.trim())) {
+      if (newChat.values.some((v) => !v.trim())) {
         toast.warning("Hãy điền toàn bộ các thông tin");
         return false;
       }
@@ -135,6 +138,9 @@ export default function ContentManagement() {
 
       // Cập nhật local state
       setChatItems([...chatItems, newChatItem]);
+
+      //set state for dialog
+      setNewChatDialogOpen(false);
 
       // Reset form
       setNewChat({
@@ -212,7 +218,14 @@ export default function ContentManagement() {
                 <ul className="space-y-1.5">
                   {item.values.map((value, index) => (
                     <li key={index} className="flex items-center justify-between p-1.5 bg-muted/50 rounded-md">
-                      <span className="text-sm mr-2 break-words flex-1 line-clamp-2">{value}</span>
+                      <span className="text-sm mr-2 break-words flex-1">
+                        {value.split("\n").map((line, index) => (
+                          <React.Fragment key={index}>
+                            {line}
+                            <br />
+                          </React.Fragment>
+                        ))}
+                      </span>
                       <Button size="sm" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleCopyToClipboard(value)}>
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
@@ -220,7 +233,7 @@ export default function ContentManagement() {
                   ))}
                 </ul>
               </CardContent>
-              <CardFooter className="text-xs text-muted-foreground py-2 px-4">{new Date(item.createdAt.seconds * 1000).toLocaleDateString()}</CardFooter>
+              <CardFooter className="text-xs text-muted-foreground py-2 px-4">{new Date(item.createdAt.seconds * 1000).toLocaleDateString("vi-VN")}</CardFooter>
             </Card>
           ))}
         </div>
@@ -274,8 +287,8 @@ export default function ContentManagement() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Dòng</label>
                   {editingItem.values.map((value, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input
+                    <div key={index} className="flex items-end gap-2">
+                      <Textarea
                         value={value}
                         onChange={(e) => {
                           const updatedValues = [...editingItem.values];
@@ -285,6 +298,7 @@ export default function ContentManagement() {
                             values: updatedValues,
                           });
                         }}
+                        rows={3}
                       />
                       <Button
                         size="icon"
@@ -300,7 +314,7 @@ export default function ContentManagement() {
                         }}
                         disabled={editingItem.values.length <= 1}
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
                   ))}
@@ -315,7 +329,7 @@ export default function ContentManagement() {
                       })
                     }
                   >
-                    <Plus className="h-4 w-4 mr-2" /> Thêm dòng
+                    <Plus className="h-4 w-4 mr-2 text-green-500" /> Thêm dòng
                   </Button>
                 </div>
               </div>
@@ -353,8 +367,8 @@ export default function ContentManagement() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Dòng</label>
                 {newChat.values.map((value, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
+                  <div key={index} className="flex items-end gap-2">
+                    <Textarea
                       value={value}
                       onChange={(e) => {
                         const updatedValues = [...newChat.values];
@@ -374,7 +388,7 @@ export default function ContentManagement() {
                           })
                         }
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 text-green-500" />
                       </Button>
                     ) : (
                       <Button
@@ -385,7 +399,7 @@ export default function ContentManagement() {
                           setNewChat({ ...newChat, values: updatedValues });
                         }}
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     )}
                   </div>
@@ -396,13 +410,15 @@ export default function ContentManagement() {
               <Button variant="outline" onClick={() => setNewChatDialogOpen(false)}>
                 Hủy
               </Button>
-              <Button
-                onClick={() => {
-                  handleAddChat();
-                  setNewChatDialogOpen(false);
-                }}
-              >
-                Thêm
+              <Button onClick={() => handleAddChat()} disabled={isAddingLoading}>
+                {isAddingLoading ? (
+                  <>
+                    <Spinner className="text-primary-foreground" />
+                    Đang thêm...
+                  </>
+                ) : (
+                  "Thêm"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
