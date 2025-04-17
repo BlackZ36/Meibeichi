@@ -15,8 +15,7 @@ import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Spinner } from "./ui/spinner";
 import { getAllCategories } from "@/services/CategoryService";
-import { vi } from "date-fns/locale";
-import { format } from "date-fns";
+import { getAllChats } from "@/services/ChatService";
 
 export default function ProductPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +38,7 @@ export default function ProductPage() {
   //fetch const
   const fetchData = async () => {
     const res = await getAllProducts();
-    console.log(res);
+    const chatData = await getAllChats()
 
     const productResponse1 = res.sort((a, b) => a.date - b.date);
 
@@ -49,7 +48,7 @@ export default function ProductPage() {
     setProducts(productResponse);
     setSelectedProduct(productResponse[0]);
     //chat
-    setChats(data.chats);
+    setChats(chatData);
     //filter and sort
     setFilteredAndSortedProducts(productResponse);
     //get type
@@ -60,7 +59,6 @@ export default function ProductPage() {
     } else {
       setTypes([{ id: "abc", name: "Tất Cả", value: "all" }]);
     }
-    console.log(types);
   };
 
   useEffect(() => {
@@ -539,26 +537,26 @@ export default function ProductPage() {
             <CardContent className="space-y-6 p-4">
               {chats &&
                 chats
-                  .filter((chat) => chat.id <= 2)
+                  .filter((chat) => chat.pin === true)
                   .map((chat) => (
                     <div className="space-y-2" key={chat.id}>
                       <div className="flex items-center justify-between">
                         <h3 className="font-medium">{chat.title}</h3>
                       </div>
                       <ul className="list-disc pl-5">
-                        {chat.contents.map((content, index) => (
+                        {chat.values.map((item, index) => (
                           <li key={index} className="flex items-center space-x-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                copyToClipboard(content, `content ${index + 1} ${chat.title}`);
+                                copyToClipboard(item, `: ${item}`);
                               }}
                               className="p-1.5 rounded-md hover:bg-muted transition-colors"
                               aria-label="Copy price to clipboard"
                             >
                               <Copy className="h-4 w-4 text-muted-foreground" />
                             </button>
-                            <span className="text-sm">{content}</span>
+                            <span className="text-sm">{item}</span>
                           </li>
                         ))}
                       </ul>
