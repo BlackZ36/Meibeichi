@@ -11,12 +11,18 @@ function App() {
     <>
       <Router>
         <Routes>
-          {/* Định nghĩa các route công khai */}
+          {/* Public routes */}
           <Route path="/" element={<LoginPage />} />
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Protected routes bọc bởi PrivateRoute */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/dashboard/:tab" element={<DashboardPage />} />
+            <Route path="/dashboard/edit/:id" element={<EditProductPage />} />
+          </Route>
+
+          {/* Catch-all 404 */}
           <Route path="*" element={<Notfound />} />
-          <Route path="/dashboard/:tab" element={<DashboardPage />} />
-          <Route path="/dashboard/edit/:id" element={<EditProductPage />} />
         </Routes>
       </Router>
       <Toaster richColors position="top-right" expand={true} theme="light" />

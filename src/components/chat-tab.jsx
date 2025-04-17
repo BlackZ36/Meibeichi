@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Copy, Edit, Plus, Trash, Pin, PinOff, X, Trash2 } from "lucide-react";
+import { Copy, Edit, Plus, Trash, Pin, PinOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

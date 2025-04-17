@@ -1,16 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { Clipboard, PlusCircle, Trash2, Upload, X } from "lucide-react";
+import { PlusCircle, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UploadImageToStorage } from "@/services/uploadImage";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Spinner } from "./ui/spinner";
 import { addProduct } from "@/services/ProductService";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
 import { Combobox } from "./custom-combo-box";
 import { getAllCategories } from "@/services/CategoryService";
 

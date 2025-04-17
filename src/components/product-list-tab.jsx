@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import ImageHover from "./image-hover";
-import data from "../lib/database.json";
 import { Button } from "./ui/button";
 import convertVietnamese from "@/lib/convert-vietnamese";
 import { deleteProduct, getAllProducts, updateProduct } from "@/services/ProductService";
@@ -38,7 +37,7 @@ export default function ProductPage() {
   //fetch const
   const fetchData = async () => {
     const res = await getAllProducts();
-    const chatData = await getAllChats()
+    const chatData = await getAllChats();
 
     const productResponse1 = res.sort((a, b) => a.date - b.date);
 
