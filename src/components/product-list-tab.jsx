@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import { ExternalLink, Search, Copy, Check, Filter, ChevronRight, ChevronLeft, Pencil, Trash2, ArrowUpNarrowWide, ArrowDownNarrowWide, Medal, Pin, PinOff } from "lucide-react";
+import { ExternalLink, Search, Copy, Check, Filter, ChevronRight, ChevronLeft, Pencil, Trash2, ArrowUpNarrowWide, ArrowDownNarrowWide, Medal, Pin, PinOff, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,13 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import ImageHover from "./image-hover";
 import { Button } from "./ui/button";
-import convertVietnamese from "@/lib/convert-vietnamese";
 import { deleteProduct, getAllProducts, updateProduct } from "@/services/ProductService";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Spinner } from "./ui/spinner";
 import { getAllCategories } from "@/services/CategoryService";
 import { getAllChats } from "@/services/ChatService";
+import convertVietnamese from "@/lib/convert-vietnamese";
 
 export default function ProductPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function ProductPage() {
   const [copiedField, setCopiedField] = useState(null);
   const [copyingImage, setCopyingImage] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filteredAndSortedProducts, setFilteredAndSortedProducts] = useState([]);
 
   //fetch const
@@ -289,9 +289,19 @@ export default function ProductPage() {
               </Select>
             </div>
 
-            <div className="relative w-full">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="text" placeholder="Tìm kiếm sản phẩm..." className="pl-8 w-full rounded-3xl" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <div className="relative w-full p-0">
+              {searchTerm ? (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 bg-primary cursor-pointer text-primary-foreground border border-primary-foreground rounded-full p-1 hover:bg-primary/80 transition"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              )}
+
+              <Input type="text" placeholder="Tìm kiếm sản phẩm..." className={`w-full rounded-3xl ${searchTerm ? "pl-10 border border-primary" : "pl-8"} `} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
           </div>
 
