@@ -8,22 +8,18 @@ import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import ImageHover from "./image-hover";
 import { Button } from "./ui/button";
-import { deleteProduct, getAllProducts, updateProduct } from "@/services/ProductService";
+import { deleteProduct, updateProduct } from "@/services/ProductService";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Spinner } from "./ui/spinner";
-import { getAllCategories } from "@/services/CategoryService";
-import { getAllChats } from "@/services/ChatService";
 import convertVietnamese from "@/lib/convert-vietnamese";
+import PropTypes from "prop-types";
 
-export default function ProductPage() {
-  const [isLoading, setIsLoading] = useState(false);
+export default function ProductPage({ products = [], categories = [], chats = [], loading = false, refresh }) {
   const [types, setTypes] = useState([]);
   const [selectedType, setSelectedType] = useState("all");
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState("");
-  const [products, setProducts] = useState();
-  const [chats, setChats] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortColumn, setSortColumn] = useState("");
@@ -34,35 +30,59 @@ export default function ProductPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filteredAndSortedProducts, setFilteredAndSortedProducts] = useState([]);
 
-  //fetch const
-  const fetchData = async () => {
-    const res = await getAllProducts();
-    const chatData = await getAllChats();
-
-    const productResponse1 = res.sort((a, b) => a.date - b.date);
-
-    const productResponse = productResponse1.sort((a, b) => b.order - a.order);
-
-    //product
-    setProducts(productResponse);
-    setSelectedProduct(productResponse[0]);
-    //chat
-    setChats(chatData);
-    //filter and sort
-    setFilteredAndSortedProducts(productResponse);
-    //get type
-    const typeResponse = await getAllCategories();
-
-    if (res && res.length > 0) {
-      setTypes([{ id: "abc", name: "Tất Cả", value: "all" }, ...typeResponse]);
-    } else {
-      setTypes([{ id: "abc", name: "Tất Cả", value: "all" }]);
-    }
-  };
-
+  // Set types when categories or products change
   useEffect(() => {
-    fetchData();
-  }, []);
+    const allType = { id: "abc", name: "Tất Cả", value: "all" };
+    setTypes([allType, ...(Array.isArray(categories) ? categories : [])]);
+  }, [categories, products]);
+
+  // Set selected product when products change
+  useEffect(() => {
+    if (products && products.length > 0) {
+      setSelectedProduct(products[0]);
+    } else {
+      setSelectedProduct(null);
+    }
+  }, [products]);
+
+  // Update filtered and sorted products
+  useEffect(() => {
+    if (!products) return;
+    let filtered = [...products];
+    if (selectedType !== "all") {
+      filtered = filtered.filter((product) => product.type === selectedType);
+    }
+    if (searchTerm.trim()) {
+      const searchSlug = convertVietnamese(searchTerm.toLowerCase());
+      filtered = filtered.filter(
+        (product) =>
+          convertVietnamese(product.name?.toLowerCase()).includes(searchSlug) ||
+          convertVietnamese(product.code?.toLowerCase()).includes(searchSlug) ||
+          convertVietnamese(product.type?.toLowerCase()).includes(searchSlug)
+      );
+    }
+    const sorted = filtered.sort((a, b) => {
+      const aValue = a[sortColumn] || "";
+      const bValue = b[sortColumn] || "";
+      if (sortColumn.includes("date") || sortColumn.includes("Date") || sortColumn.includes("time") || sortColumn.includes("Time")) {
+        const dateA = aValue?.seconds ? new Date(aValue.seconds * 1000) : new Date(aValue);
+        const dateB = bValue?.seconds ? new Date(bValue.seconds * 1000) : new Date(bValue);
+        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+      }
+      return 0;
+    });
+    setFilteredAndSortedProducts(sorted);
+    if (sorted.length > 0) {
+      setSelectedProduct(sorted[0]);
+    }
+    setCurrentPage(1);
+  }, [products, sortColumn, sortDirection, selectedType, searchTerm]);
 
   const firestoreToDate = (timestamp) => {
     if (!timestamp || !timestamp.seconds) return new Date();
@@ -76,9 +96,9 @@ export default function ProductPage() {
     const day = d.getDate().toString().padStart(2, "0");
     const month = (d.getMonth() + 1).toString().padStart(2, "0");
     const year = d.getFullYear();
-
     return `${hours}:${minutes}, ${day}/${month}/${year}`;
   };
+
   // Pagination calculations
   const totalPages = Math.ceil(filteredAndSortedProducts.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -88,99 +108,35 @@ export default function ProductPage() {
   // Handle column sort
   const handleSort = (column) => {
     if (sortColumn === column) {
-      // Toggle direction if same column
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
-      // Set new column and default to ascending
       setSortColumn(column);
       setSortDirection("asc");
     }
   };
 
-  // Update filtered and sorted products
-  useEffect(() => {
-    if (!products) return;
-    // First filter by type and search term
-    let filtered = [...products];
-
-    // Apply type filter
-    if (selectedType !== "all") {
-      filtered = filtered.filter((product) => product.type === selectedType);
-    }
-
-    if (searchTerm.trim()) {
-      const searchSlug = convertVietnamese(searchTerm.toLowerCase());
-      filtered = filtered.filter(
-        (product) => convertVietnamese(product.name?.toLowerCase()).includes(searchSlug) || convertVietnamese(product.code?.toLowerCase()).includes(searchSlug) || convertVietnamese(product.type?.toLowerCase()).includes(searchSlug)
-      );
-    }
-
-    const sorted = filtered.sort((a, b) => {
-      // Ưu tiên order === 99 lên trên
-      // if (a.order === 99 && b.order !== 99) return -1;
-      // if (b.order === 99 && a.order !== 99) return 1;
-
-      const aValue = a[sortColumn] || "";
-      const bValue = b[sortColumn] || "";
-
-      // Xử lý sắp xếp theo ngày tháng
-      if (sortColumn.includes("date") || sortColumn.includes("Date") || sortColumn.includes("time") || sortColumn.includes("Time")) {
-        // Chuyển đổi Firestore timestamp thành Date object nếu cần
-        const dateA = aValue?.seconds ? new Date(aValue.seconds * 1000) : new Date(aValue);
-        const dateB = bValue?.seconds ? new Date(bValue.seconds * 1000) : new Date(bValue);
-
-        return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
-      }
-
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortDirection === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-      }
-
-      return 0;
-    });
-
-    setFilteredAndSortedProducts(sorted);
-    if (sorted.length > 0) {
-      setSelectedProduct(sorted[0]);
-    }
-    setCurrentPage(1);
-  }, [products, sortColumn, sortDirection, selectedType, searchTerm]);
-
   const copyImageToClipboard = async (imageUrl, index) => {
     try {
       setCopyingImage(index);
-
-      // Tạo ảnh từ URL
-      const img = new Image();
-      img.crossOrigin = "anonymous"; // Tránh lỗi CORS
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
       img.src = imageUrl;
-
       img.onload = async () => {
-        // Tạo canvas và vẽ ảnh lên đó
         const canvas = document.createElement("canvas");
         canvas.width = img.width;
         canvas.height = img.height;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0);
-
-        // Chuyển đổi canvas thành blob
         canvas.toBlob(async (blob) => {
-          const item = new ClipboardItem({ "image/png": blob });
-          await navigator.clipboard.write([item]);
-
+          const item = new window.ClipboardItem({ "image/png": blob });
+          await window.navigator.clipboard.write([item]);
           setCopiedField(`Image ${index + 1}`);
           toast.success(`đã copy ảnh ${index + 1}`);
-
           setTimeout(() => {
             setCopiedField(null);
           }, 2000);
         }, "image/png");
       };
-
       img.onerror = () => {
         throw new Error("Failed to load image");
       };
@@ -194,13 +150,11 @@ export default function ProductPage() {
 
   //copy field
   const copyToClipboard = (text, fieldName) => {
-    navigator.clipboard
+    window.navigator.clipboard
       .writeText(text)
       .then(() => {
         setCopiedField(fieldName);
         toast.success(`đã copy ${fieldName}`);
-
-        // Reset the copied state after 2 seconds
         setTimeout(() => {
           setCopiedField(null);
         }, 2000);
@@ -219,14 +173,14 @@ export default function ProductPage() {
   // Handle rows per page change
   const handleRowsPerPageChange = (value) => {
     setRowsPerPage(Number.parseInt(value));
-    setCurrentPage(1); // Reset to first page when changing rows per page
+    setCurrentPage(1);
   };
 
   //handle confirm delete
   const handleConfirmDelete = async (productId) => {
     await deleteProduct(productId);
     toast.success("Xóa sản phầm thành công");
-    fetchData();
+    refresh && refresh();
   };
   //handle open dialog
   const handleOpenDialog = (id) => {
@@ -237,29 +191,25 @@ export default function ProductPage() {
   const handlePin = async (id, type) => {
     try {
       const updatedOrder = type === "pin" ? 99 : 0;
-      setIsLoading(true);
       // Tìm product cần update
       const productToUpdate = products.find((p) => p.id === id);
       if (!productToUpdate) return toast.error("Không tìm thấy sản phẩm");
-
       const productUpdate = {
         ...productToUpdate,
         order: updatedOrder,
       };
       await updateProduct(id, productUpdate);
-      setIsLoading(false);
       toast.success(type === "pin" ? "Đã ghim sản phẩm" : "Đã bỏ ghim sản phẩm");
-      fetchData();
+      refresh && refresh();
     } catch (error) {
       console.error("Lỗi khi cập nhật order:", error);
       toast.error("Không thể cập nhật trạng thái ghim");
-      setIsLoading(false);
     }
   };
 
   return (
     <div className=" py-8 px-4">
-      {isLoading && (
+      {loading && (
         <div className="fixed inset-0 top-0 left-0 w-full h-full z-50 bg-muted-foreground/20 flex items-center justify-center">
           <Spinner />
         </div>
@@ -602,3 +552,11 @@ export default function ProductPage() {
     </div>
   );
 }
+
+ProductPage.propTypes = {
+  products: PropTypes.array,
+  categories: PropTypes.array,
+  chats: PropTypes.array,
+  loading: PropTypes.bool,
+  refresh: PropTypes.func,
+};

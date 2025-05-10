@@ -1,92 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { Copy, Edit, Plus, Trash, Pin, PinOff, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { addChat, deleteChat, getAllChats, updateChat } from "@/services/ChatService";
+import { addChat, deleteChat, updateChat } from "@/services/ChatService";
 import { Spinner } from "./ui/spinner";
 import { Textarea } from "./ui/textarea";
 
-export default function ContentManagement() {
+export default function ChatTab({ chats = [], loading = false, refresh }) {
   const [chatItems, setChatItems] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [isAddingLoading, setIsAddingLoading] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-
   const [editingItem, setEditingItem] = useState(null);
   const [newChatDialogOpen, setNewChatDialogOpen] = useState(false);
+  const [newChat, setNewChat] = useState({ title: "", values: [""] });
 
-  const [newChat, setNewChat] = useState({
-    title: "",
-    values: [""],
-  });
-
-  //fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        const chats = await getAllChats();
-        setChatItems(chats);
-        setIsLoading(false);
-      } catch (error) {
-        toast.error("Failed to fetch chat data");
-        console.log(error);
-      }
-    };
-    fetchData();
-  }, []);
+  // Sync chatItems with chats prop
+  React.useEffect(() => {
+    setChatItems(chats);
+  }, [chats]);
 
   // Copy to clipboard function
   const handleCopyToClipboard = (text) => {
-    // Thay thế tất cả \n bằng ký tự xuống dòng thực sự
     const processedText = text.replace(/\\n/g, "\n").replace(/\n/g, "\n");
-
-    navigator.clipboard.writeText(processedText);
+    window.navigator.clipboard.writeText(processedText);
     toast.success("Đã copy chat vào bộ nhớ");
   };
   // Delete chat function
   const handleDeleteChat = async (id) => {
     setIsDeleteLoading(true);
     try {
-      // Gọi API xóa chat
       await deleteChat(id);
-
-      // Xóa khỏi local state
-      setChatItems(chatItems.filter((item) => item.id !== id));
-
       toast.success("Đã xóa chat thành công");
+      refresh && refresh();
     } catch (error) {
       console.error("Lỗi khi xóa chat:", error);
       toast.error("Đã xảy ra lỗi khi xóa chat");
     } finally {
-      // Đóng dialog và reset
       setDeleteDialogOpen(false);
       setItemToDelete(null);
       setIsDeleteLoading(false);
     }
   };
-
   // Edit chat function
   const handleEditChat = async () => {
     if (!editingItem) return;
-
     setIsEditLoading(true);
     try {
-      // Gọi API update
       await updateChat(editingItem.id, editingItem);
-      // Cập nhật lại UI
-      setChatItems(chatItems.map((item) => (item.id === editingItem.id ? editingItem : item)));
-
       toast.success("Đã cập nhật chat thành công");
       setEditingItem(null);
+      refresh && refresh();
     } catch (error) {
       console.error("Lỗi khi cập nhật chat:", error);
       toast.error("Đã xảy ra lỗi khi cập nhật chat");
@@ -94,36 +64,28 @@ export default function ContentManagement() {
       setIsEditLoading(false);
     }
   };
-
   // Pin chat function
   const handlePinChat = async (id) => {
-    setIsLoading(true);
     try {
       const currentItem = chatItems.find((item) => item.id === id);
       if (!currentItem) throw new Error("Chat không tồn tại");
       const updatedItem = { ...currentItem, pin: !currentItem.pin };
       await updateChat(id, updatedItem);
-      setChatItems(chatItems.map((item) => (item.id === id ? updatedItem : item)));
-
       toast.success(updatedItem.pin ? "Đã ghim chat vào trang sản phẩm" : "Đã bỏ ghim chat");
+      refresh && refresh();
     } catch (error) {
       console.error("Lỗi khi (bỏ) ghim chat:", error);
       toast.error("Đã xảy ra lỗi khi cập nhật trạng thái ghim");
-    } finally {
-      setIsLoading(false);
     }
   };
-
   // Add new chat function
   const handleAddChat = async () => {
     setIsAddingLoading(true);
     try {
-      // Kiểm tra dữ liệu đầu vào
       if (newChat.values.some((v) => !v.trim())) {
         toast.warning("Hãy điền toàn bộ các thông tin");
         return false;
       }
-
       const newChatItem = {
         pin: false,
         title: newChat.title,
@@ -133,22 +95,11 @@ export default function ContentManagement() {
           nanoseconds: 0,
         },
       };
-
       await addChat(newChatItem);
-
-      // Cập nhật local state
-      setChatItems([...chatItems, newChatItem]);
-
-      //set state for dialog
       setNewChatDialogOpen(false);
-
-      // Reset form
-      setNewChat({
-        title: "",
-        values: [""],
-      });
-
+      setNewChat({ title: "", values: [""] });
       toast.success("Đã thêm chat thành công");
+      refresh && refresh();
       return true;
     } catch (error) {
       console.error("Lỗi khi thêm chat:", error);
@@ -158,17 +109,15 @@ export default function ContentManagement() {
       setIsAddingLoading(false);
     }
   };
-
   // Sort items to show pinned first
   const sortedChatItems = [...chatItems].sort((a, b) => {
     if (a.pin && !b.pin) return -1;
     if (!a.pin && b.pin) return 1;
     return 0;
   });
-
   return (
     <>
-      {isLoading && (
+      {loading && (
         <div className="fixed inset-0 top-0 left-0 w-full h-full z-90 bg-muted-foreground/20 flex items-center justify-center">
           <Spinner />
         </div>
@@ -427,3 +376,9 @@ export default function ContentManagement() {
     </>
   );
 }
+
+ChatTab.propTypes = {
+  chats: PropTypes.array,
+  loading: PropTypes.bool,
+  refresh: PropTypes.func,
+};

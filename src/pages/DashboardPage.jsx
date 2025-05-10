@@ -5,11 +5,43 @@ import ProductPage from "@/components/product-list-tab";
 import AddProductTab from "@/components/add-product-tab";
 import ChatTab from "@/components/chat-tab";
 import { Navbar } from "@/components/navbar";
+import { getAllProducts } from "@/services/ProductService";
+import { getAllChats } from "@/services/ChatService";
+import { getAllCategories } from "@/services/CategoryService";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { tab } = useParams();
   const [activeTab, setActiveTab] = useState(tab || "general");
+
+  // Centralized data state
+  const [products, setProducts] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Centralized fetch function
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      const [productsRes, chatsRes, categoriesRes] = await Promise.all([
+        getAllProducts(),
+        getAllChats(),
+        getAllCategories(),
+      ]);
+      setProducts(productsRes);
+      setChats(chatsRes);
+      setCategories(categoriesRes);
+    } catch {
+      // handle error (optional: toast)
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
 
   useEffect(() => {
     //check tab
@@ -41,19 +73,19 @@ export default function Dashboard() {
             <TabsTrigger value="chat" className="w-full text-center rounded-3xl">
               Chat
             </TabsTrigger>
-            {/* <TabsTrigger value="settings" disabled={localStorage.getItem("user") !== "admin"} className="w-full text-center">
-              Cài Đặt
-            </TabsTrigger> */}
             <TabsTrigger value="add" className="w-full text-center rounded-3xl">
               Thêm Item
             </TabsTrigger>
-            {/* <TabsTrigger value="addchat" className="w-full text-center">
-              Thêm Chat
-            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="general">
-            <ProductPage />
+            <ProductPage
+              products={products}
+              categories={categories}
+              chats={chats}
+              loading={loading}
+              refresh={fetchAllData}
+            />
           </TabsContent>
 
           <TabsContent value="add">
@@ -61,7 +93,11 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="chat">
-            <ChatTab />
+            <ChatTab
+              chats={chats}
+              loading={loading}
+              refresh={fetchAllData}
+            />
           </TabsContent>
 
           <TabsContent value="settings"></TabsContent>
